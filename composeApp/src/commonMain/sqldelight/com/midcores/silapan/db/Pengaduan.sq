@@ -1,0 +1,35 @@
+CREATE TABLE pengaduan (
+    id TEXT NOT NULL PRIMARY KEY,
+    title TEXT NOT NULL,
+    description TEXT,
+    photo TEXT,
+    after_photo TEXT,
+    address_label TEXT,
+    location TEXT,
+    jenis TEXT NOT NULL, -- "pengaduan" or "sampah_liar"
+    status TEXT DEFAULT 'pending',
+    created_at TEXT NOT NULL
+);
+
+selectAll:
+SELECT * FROM pengaduan ORDER BY created_at DESC;
+
+selectAllByJenis:
+SELECT * FROM pengaduan WHERE jenis = ? ORDER BY created_at DESC;
+
+selectById:
+SELECT * FROM pengaduan WHERE id = ?;
+
+upsertPengaduan:
+INSERT OR REPLACE INTO pengaduan (id, title, description, photo, after_photo, address_label, location, jenis, status, created_at)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+
+upsertAllFieldPengaduan:
+INSERT OR REPLACE INTO pengaduan (id, title, description, photo, after_photo, address_label, location, jenis, status, created_at)
+VALUES ?;
+
+deleteById:
+DELETE FROM pengaduan WHERE id = ?;
+
+deleteAll:
+DELETE FROM pengaduan;

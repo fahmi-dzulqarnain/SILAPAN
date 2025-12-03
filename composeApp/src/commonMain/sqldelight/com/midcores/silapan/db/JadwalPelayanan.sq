@@ -1,0 +1,15 @@
+CREATE TABLE jadwal_pelayanan (
+    id TEXT NOT NULL PRIMARY KEY,
+    bulan TEXT NOT NULL,
+    tahun TEXT NOT NULL,
+    file_path TEXT NOT NULL,
+    created_by TEXT,
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL
+);
+
+selectLatest:
+SELECT * FROM jadwal_pelayanan ORDER BY tahun DESC, bulan DESC LIMIT 1;
+
+selectByYear:
+SELECT * FROM jadwal_pelayanan WHERE tahun = ? ORDER BY bulan DESC;

@@ -1,0 +1,19 @@
+CREATE TABLE profile (
+    id TEXT NOT NULL PRIMARY KEY,
+    type TEXT NOT NULL, -- "system" or "user"
+    name TEXT,
+    email TEXT,
+    phone TEXT,
+    address TEXT,
+    description TEXT,
+    photo TEXT,
+    updated_at TEXT
+);
+
+selectByType:
+SELECT * FROM profile WHERE type = ? LIMIT 1;
+
+updateProfile:
+UPDATE profile
+SET name = ?, email = ?, phone = ?, address = ?, description = ?, photo = ?, updated_at = ?
+WHERE id = ?;

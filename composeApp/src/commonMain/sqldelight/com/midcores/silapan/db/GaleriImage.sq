@@ -1,0 +1,15 @@
+CREATE TABLE galeri_image (
+    id TEXT NOT NULL PRIMARY KEY,
+    galeri_id TEXT NOT NULL REFERENCES galeri(id) ON DELETE CASCADE,
+    image_url TEXT NOT NULL,
+    created_at TEXT NOT NULL
+);
+
+upsertGaleriImage:
+INSERT OR REPLACE INTO galeri_image (id, galeri_id, image_url, created_at)
+VALUES (?, ?, ?, ?);
+
+selectImagesByGaleriId:
+SELECT *
+FROM galeri_image
+WHERE galeri_id = ?;
