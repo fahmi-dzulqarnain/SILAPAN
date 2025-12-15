@@ -34,9 +34,12 @@ class JadwalPelayananViewModel(
         _isLoading,
         _error
     ) { allJadwal, selectedYear, isLoading, error ->
+        val years = generateYears(getCurrentYearString(), 3)
+
         UiState(
             isLoading = isLoading,
             selectedCategory = selectedYear,
+            availableCategories = years,
             error = error,
             filteredData = allJadwal
         )
@@ -68,9 +71,24 @@ class JadwalPelayananViewModel(
     }
 
     @OptIn(ExperimentalTime::class)
-    private fun getCurrentYearString(): String {
+    fun getCurrentYearString(): String {
         val now = Clock.System.now()
         val localDateTime = now.toLocalDateTime(TimeZone.currentSystemDefault())
         return localDateTime.year.toString()
+    }
+
+    private fun generateYears(from: String, maxYear: Int = 3): List<String> {
+        val currentYear = getCurrentYearString().toInt()
+        val fromYear = from.toInt()
+
+        val years = mutableListOf<String>()
+
+        for (year in fromYear..currentYear) {
+            if (year <= maxYear) {
+                years.add(year.toString())
+            }
+        }
+
+        return years
     }
 }

@@ -1,5 +1,6 @@
 package com.midcores.silapan.data.repository
 
+import com.midcores.silapan.api.ApiResponse
 import com.midcores.silapan.api.service.JadwalPelayananService
 import com.midcores.silapan.database.DatabaseDataSource
 import com.midcores.silapan.domain.model.JadwalPelayanan

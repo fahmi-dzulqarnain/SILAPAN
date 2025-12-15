@@ -10,6 +10,7 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -52,6 +53,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.unit.dp
 import cafe.adriel.voyager.core.screen.Screen
 import cafe.adriel.voyager.koin.koinScreenModel
@@ -63,7 +65,11 @@ import com.midcores.silapan.presentation.ui.component.BackButton
 import com.midcores.silapan.presentation.viewmodel.LocationFormViewModel
 import com.midcores.silapan.presentation.viewmodel.pengaduan.PengaduanFormViewModel
 import com.midcores.silapan.presentation.viewmodel.pengaduan.PengaduanViewModel
+import io.github.ismoy.imagepickerkmp.domain.config.CameraCaptureConfig
 import io.github.ismoy.imagepickerkmp.domain.config.ImagePickerConfig
+import io.github.ismoy.imagepickerkmp.domain.config.PermissionAndConfirmationConfig
+import io.github.ismoy.imagepickerkmp.domain.models.CapturePhotoPreference
+import io.github.ismoy.imagepickerkmp.domain.models.CompressionLevel
 import io.github.ismoy.imagepickerkmp.presentation.ui.components.GalleryPickerLauncher
 import io.github.ismoy.imagepickerkmp.presentation.ui.components.ImagePickerLauncher
 import kotlinx.coroutines.launch
@@ -81,18 +87,8 @@ object PengaduanFormScreen : Screen {
         val currentPengaduan by pengaduanViewModel.selectedPengaduan.collectAsState()
         var isSubmitEnabled by remember { mutableStateOf(true) }
 
-        if (viewModel.showGallery) {
-            GalleryPickerLauncher(
-                onPhotosSelected = { photos ->
-                    viewModel.onPhotoSelected(photos.first())
-                },
-                onError = { viewModel.showGallery = false },
-                onDismiss = { viewModel.showGallery = false },
-                allowMultiple = false
-            )
-        }
-
         LaunchedEffect(Unit) {
+            locationFormViewModel.updateAddressLabel("", "", "")
             currentPengaduan?.let {
                 viewModel.onTitleChanged(it.title)
                 viewModel.onDescriptionChanged(it.description ?: "")
@@ -113,8 +109,6 @@ object PengaduanFormScreen : Screen {
                     )
                 }
             }
-
-            locationFormViewModel.updateAddressLabel("", "", "")
         }
 
         Scaffold(
@@ -151,15 +145,17 @@ object PengaduanFormScreen : Screen {
                 viewModel.onJenisChanged(initialJenis ?: PengaduanFilter.PENGADUAN)
             }
 
-            Column(
+            Box(
                 modifier = Modifier
                     .fillMaxSize()
-                    .imePadding()
-                    .padding(padding)
-                    .padding(16.dp),
-                verticalArrangement = Arrangement.SpaceBetween
+                    .padding(padding),
             ) {
-                LazyColumn {
+                LazyColumn(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .imePadding()
+                        .padding(16.dp)
+                ) {
                     item {
                         AnimatedVisibility(
                             viewModel.titleError != null
@@ -178,7 +174,10 @@ object PengaduanFormScreen : Screen {
                             PengaduanFilter.SAMPAH_LIAR
                         )
 
-                        Text("Jenis Laporan")
+                        Text(
+                            "Jenis Laporan",
+                            style = MaterialTheme.typography.headlineMedium
+                        )
 
                         LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                             items(jenisList) { category ->
@@ -283,7 +282,10 @@ object PengaduanFormScreen : Screen {
                             }
                         } else {
                             currentPengaduan?.photo?.let {
-                                Text("Sebelum")
+                                Text(
+                                    "Sebelum",
+                                    style = MaterialTheme.typography.headlineMedium
+                                )
 
                                 Spacer(Modifier.width(8.dp))
 
@@ -291,8 +293,9 @@ object PengaduanFormScreen : Screen {
                                     "${ApiRoutes.STORAGE}${it}",
                                     contentDescription = "",
                                     modifier = Modifier
-                                        .height(200.dp)
+                                        .fillMaxWidth()
                                         .padding(vertical = 16.dp)
+                                        .clip(RoundedCornerShape(12.dp))
                                 )
                             }
                         }
@@ -300,7 +303,10 @@ object PengaduanFormScreen : Screen {
                         Spacer(Modifier.width(12.dp))
 
                         currentPengaduan?.afterPhoto?.let {
-                            Text("Setelah")
+                            Text(
+                                "Setelah",
+                                style = MaterialTheme.typography.headlineMedium
+                            )
 
                             Spacer(Modifier.width(8.dp))
 
@@ -308,8 +314,9 @@ object PengaduanFormScreen : Screen {
                                 "${ApiRoutes.STORAGE}${it}",
                                 contentDescription = "",
                                 modifier = Modifier
-                                    .height(200.dp)
+                                    .fillMaxWidth()
                                     .padding(vertical = 16.dp)
+                                    .clip(RoundedCornerShape(12.dp))
                             )
                         }
 
@@ -323,6 +330,8 @@ object PengaduanFormScreen : Screen {
                                     onClick = {
                                         viewModel.showCamera = true
                                         viewModel.showImageButtons = false
+                                        viewModel.capturedPhoto = null
+                                        viewModel.capturedPhotoBase64 = null
                                     },
                                     modifier = Modifier.weight(1f),
                                     shape = RoundedCornerShape(corner = CornerSize(12.dp))
@@ -350,6 +359,7 @@ object PengaduanFormScreen : Screen {
                                         viewModel.showGallery = true
                                         viewModel.showImageButtons = false
                                         viewModel.capturedPhoto = null
+                                        viewModel.capturedPhotoBase64 = null
                                     },
                                     modifier = Modifier.weight(1f),
                                     shape = RoundedCornerShape(corner = CornerSize(12.dp))
@@ -378,77 +388,112 @@ object PengaduanFormScreen : Screen {
                                 contentDescription = "Captured photo",
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .height(200.dp)
+                                    .padding(top = 16.dp)
+                                    .clip(RoundedCornerShape(12.dp))
                             )
                         }
                     }
                 }
 
-                if (currentPengaduan == null) {
-                    Column(
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.spacedBy(0.dp)
-                    ) {
-                        Button(
-                            enabled = isSubmitEnabled,
-                            onClick = {
-                                val latitude = locationFormViewModel.uiState.latitude
-                                val longitude = locationFormViewModel.uiState.longitude
-                                val latLongString =
-                                    if (latitude.isNotEmpty() && longitude.isNotEmpty())
-                                        "$latitude,$longitude"
-                                    else
-                                        ""
+                Column(
+                    verticalArrangement = Arrangement.SpaceBetween,
+                    modifier = Modifier
+                        .imePadding()
+                        .padding(16.dp)
+                ) {
+                    Spacer(modifier = Modifier.weight(1f))
 
-                                isSubmitEnabled = true
-                                viewModel.submitPengaduan(
-                                    locationFormViewModel.uiState.addressLabel,
-                                    latLongString,
-                                    onSuccess = {
-                                        navigator.pop()
-                                        isSubmitEnabled = false
-                                    },
-                                    onError = { error ->
-                                        print(error)
-                                        isSubmitEnabled = false
-                                    }
-                                )
-                                navigator.pop()
-                            },
-                            modifier = Modifier.fillMaxWidth(),
-                            shape = RoundedCornerShape(corner = CornerSize(12.dp))
+                    if (currentPengaduan == null) {
+                        Column(
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            verticalArrangement = Arrangement.spacedBy(0.dp)
                         ) {
-                            Text(
-                                "Kirim Laporan",
-                                style = MaterialTheme.typography.headlineMedium
-                            )
-                        }
+                            Button(
+                                enabled = isSubmitEnabled,
+                                onClick = {
+                                    val latitude = locationFormViewModel.uiState.latitude
+                                    val longitude = locationFormViewModel.uiState.longitude
+                                    val addressLabel = locationFormViewModel.uiState.addressLabel
+                                    val latLongString =
+                                        if (latitude.isNotEmpty() && longitude.isNotEmpty())
+                                            "$latitude,$longitude"
+                                        else
+                                            ""
 
-                        if (!isSubmitEnabled) {
-                            LinearProgressIndicator(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(horizontal = 12.dp),
-                                color = MaterialTheme.colorScheme.secondary,
-                                trackColor = MaterialTheme.colorScheme.surfaceVariant,
-                            )
+                                    isSubmitEnabled = false
+                                    coroutineScope.launch {
+                                        viewModel.submitPengaduan(
+                                            addressLabel,
+                                            latLongString,
+                                            onSuccess = {
+                                                navigator.pop()
+                                                isSubmitEnabled = true
+                                            },
+                                            onError = { error ->
+                                                viewModel.titleError = "Gagal Mengunggah!"
+                                                viewModel.descriptionError = error
+                                                isSubmitEnabled = true
+                                            }
+                                        )
+                                    }
+                                },
+                                modifier = Modifier.fillMaxWidth(),
+                                shape = RoundedCornerShape(corner = CornerSize(12.dp))
+                            ) {
+                                Text(
+                                    "Kirim Laporan",
+                                    style = MaterialTheme.typography.headlineMedium
+                                )
+                            }
+
+                            if (!isSubmitEnabled) {
+                                LinearProgressIndicator(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(horizontal = 12.dp),
+                                    color = MaterialTheme.colorScheme.secondary,
+                                    trackColor = MaterialTheme.colorScheme.surfaceVariant,
+                                )
+                            }
                         }
                     }
+                }
+
+                if (viewModel.showGallery) {
+                    GalleryPickerLauncher(
+                        onPhotosSelected = { photos ->
+                            viewModel.onPhotoSelected(photos.first())
+                        },
+                        onError = { viewModel.showGallery = false },
+                        onDismiss = { viewModel.showGallery = false },
+                        cameraCaptureConfig = CameraCaptureConfig(
+                            preference = CapturePhotoPreference.BALANCED,
+                            compressionLevel = CompressionLevel.MEDIUM,
+                            permissionAndConfirmationConfig = PermissionAndConfirmationConfig(),
+                        ),
+                        allowMultiple = false,
+                        enableCrop = true
+                    )
+                }
+
+                if (viewModel.showCamera) {
+                    ImagePickerLauncher(
+                        config = ImagePickerConfig(
+                            onPhotoCaptured = { result ->
+                                viewModel.onPhotoSelected(photoResult = result)
+                            },
+                            onError = { viewModel.showCamera = false },
+                            onDismiss = { viewModel.showCamera = false },
+                            cameraCaptureConfig = CameraCaptureConfig(
+                                compressionLevel = CompressionLevel.HIGH,
+                                permissionAndConfirmationConfig = PermissionAndConfirmationConfig()
+                            ),
+                            directCameraLaunch = true,
+                            enableCrop = true
+                        )
+                    )
                 }
             }
-        }
-
-        if (viewModel.showCamera) {
-            ImagePickerLauncher(
-                config = ImagePickerConfig(
-                    onPhotoCaptured = { result ->
-                        viewModel.onPhotoSelected(photoResult = result)
-                    },
-                    onError = { viewModel.showCamera = false },
-                    onDismiss = { viewModel.showCamera = false },
-                    directCameraLaunch = true
-                )
-            )
         }
     }
 }

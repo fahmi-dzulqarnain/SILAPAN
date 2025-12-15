@@ -5,17 +5,21 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardColors
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FilterChip
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
@@ -55,7 +59,7 @@ object JadwalPelayananScreen : Screen {
         val state by viewModel.uiState.collectAsState()
 
         LaunchedEffect(Unit) {
-            viewModel.loadByYear(state.selectedCategory)
+            viewModel.loadByYear(viewModel.getCurrentYearString())
         }
 
         Scaffold(
@@ -107,16 +111,18 @@ private fun JadwalPelayananContent(
         Modifier.padding(all = 16.dp)
     ) {
         item {
-            DropdownSelector(
-                label = "Tahun",
-                options = listOf("2025", "2026", "2027"),
-                selected = state.selectedCategory,
-                onSelected = {
-                    onFilterChange(it)
-                },
-                modifier = Modifier
-                    .padding(all = 16.dp)
-            )
+            LazyRow(
+                contentPadding = PaddingValues(horizontal = 16.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                items(state.availableCategories) { category ->
+                    FilterChip(
+                        selected = (category == state.selectedCategory),
+                        onClick = { onFilterChange(category) },
+                        label = { Text(category) }
+                    )
+                }
+            }
         }
 
         state.filteredData.forEach {

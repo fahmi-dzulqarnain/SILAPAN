@@ -96,7 +96,7 @@ object PengaduanScreen : Screen {
                 } else {
                     PengaduanContent(
                         state = state,
-                        onRefresh = { viewModel.loadUserPengaduan(true) },
+                        onRefresh = { viewModel.loadUserPengaduanSync(true) },
                         isRefreshing = state.isLoading,
                         onCategoryClick = { viewModel.onCategorySelected(it) },
                         onDeleteItem = { viewModel.delete(it) },
@@ -122,7 +122,11 @@ private fun PengaduanContent(
     onDeleteItem: (String) -> Unit,
     onPengaduanClick: (Pengaduan) -> Unit
 ) {
-    Column {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(top = 16.dp, bottom = 64.dp)
+    ) {
         LazyRow(
             contentPadding = PaddingValues(horizontal = 16.dp),
             horizontalArrangement = Arrangement.spacedBy(8.dp)

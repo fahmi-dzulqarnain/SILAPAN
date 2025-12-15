@@ -4,11 +4,10 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.graphics.painter.Painter
-import androidx.compose.ui.text.capitalize
-import androidx.compose.ui.text.intl.Locale
 import com.midcores.silapan.api.model.CreatePengaduanDto
 import com.midcores.silapan.domain.usecase.pengaduan.CreatePengaduanUseCase
 import com.midcores.silapan.presentation.ui.pengaduan.PengaduanFilter
+import com.midcores.silapan.presentation.utility.ImageCompressor
 import com.midcores.silapan.presentation.viewmodel.BaseViewModel
 import io.github.ismoy.imagepickerkmp.domain.extensions.loadBase64
 import io.github.ismoy.imagepickerkmp.domain.extensions.loadPainter
@@ -18,7 +17,8 @@ import io.ktor.util.decodeBase64Bytes
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.launch
+import kotlin.uuid.ExperimentalUuidApi
+import kotlin.uuid.Uuid
 
 class PengaduanFormViewModel(
     private val createPengaduan: CreatePengaduanUseCase
@@ -64,6 +64,7 @@ class PengaduanFormViewModel(
     ) {
         if (photo != null) {
             photo.let {
+
                 imagePath = it.fileName
                 capturedPhoto = it.loadPainter()
                 capturedPhotoBase64 = it.loadBase64().decodeBase64Bytes()
@@ -87,7 +88,8 @@ class PengaduanFormViewModel(
         descriptionError = null
     }
 
-    fun submitPengaduan(
+    @OptIn(ExperimentalUuidApi::class)
+    suspend fun submitPengaduan(
         addressLabel: String,
         locationLatLong: String,
         onSuccess: () -> Unit,
@@ -119,31 +121,34 @@ class PengaduanFormViewModel(
             return
         }
 
-        viewModelScope.launch {
+        _uiState.value = FormUiState(loading = true)
 
-            _uiState.value = FormUiState(loading = true)
+        try {
+            capturedPhotoBase64?.let {
+                val cleanJpegBytes = ImageCompressor.compress(it, quality = 80)
+                val pengaduanDTO = CreatePengaduanDto(
+                    title = title,
+                    description = description,
+                    jenis = jenis.value,
+                    locationLatLong,
+                    addressLabel,
+                    cleanJpegBytes,
+                    imagePath ?: Uuid.random().toString()
+                )
 
-            try {
-                capturedPhotoBase64?.let {
-                    val pengaduanDTO = CreatePengaduanDto(
-                        title = title,
-                        description = description,
-                        jenis = jenis.value,
-                        locationLatLong,
-                        addressLabel,
-                        it,
-                        imagePath ?: title.replace(" ", "_")
-                    )
-
-                    createPengaduan(pengaduanDTO)
-                }
+                createPengaduan(pengaduanDTO)
 
                 _uiState.value = FormUiState(success = true)
                 onSuccess()
-            } catch (e: Exception) {
-                onError(e.message ?: "Gagal mengirim laporan")
-                _uiState.value = FormUiState(error = e.message)
             }
+
+            if (capturedPhotoBase64 == null) {
+                onError("Foto Diperlukan")
+                _uiState.value = FormUiState(error = "Foto Diperlukan")
+            }
+        } catch (e: Exception) {
+            onError(e.message ?: "Gagal mengirim laporan")
+            _uiState.value = FormUiState(error = e.message)
         }
     }
 }

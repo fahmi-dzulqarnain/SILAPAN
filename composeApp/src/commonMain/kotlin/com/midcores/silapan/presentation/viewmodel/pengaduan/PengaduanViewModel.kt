@@ -54,21 +54,25 @@ class PengaduanViewModel(
         initialValue = UiState()
     )
 
-    fun loadUserPengaduan(refresh: Boolean = false) {
-        viewModelScope.launch {
-            _isLoading.update { true }
-            try {
-                val data = getPengaduanList(refresh)
-                _allPengaduan.update {
-                    if (data.isNullOrEmpty()) emptyList()
-                    else data
-                }
-                _error.update { null }
-            } catch (e: Exception) {
-                _error.update { e.message ?: "Failed to fetch pengaduan" }
-            } finally {
-                _isLoading.update { false }
+    suspend fun loadUserPengaduan(refresh: Boolean = false) {
+        _isLoading.update { true }
+        try {
+            val data = getPengaduanList(refresh)
+            _allPengaduan.update {
+                if (data.isNullOrEmpty()) emptyList()
+                else data
             }
+            _error.update { null }
+        } catch (e: Exception) {
+            _error.update { e.message ?: "Failed to fetch pengaduan" }
+        } finally {
+            _isLoading.update { false }
+        }
+    }
+
+    fun loadUserPengaduanSync(refresh: Boolean = false) {
+        viewModelScope.launch {
+            loadUserPengaduan(refresh)
         }
     }
 
@@ -86,8 +90,7 @@ class PengaduanViewModel(
     fun delete(id: String) {
         viewModelScope.launch {
             deletePengaduan(id)
+            loadUserPengaduan(true)
         }
-
-        loadUserPengaduan(true)
     }
 }
